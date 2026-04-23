@@ -1,121 +1,99 @@
-import streamlit as st
-import paho.mqtt.client as mqtt
-import json
+import paho.mqtt.client as paho
 import time
+import streamlit as st
+import json
+import platform
 
-# Configuración de la página
-st.set_page_config(
-    page_title="RECEPTO MQTT INTELIGENTE PRO MAX",
-    page_icon="📡📡📡📡📡",
-    layout="centered"
-)
+# --- CONFIGURACIÓN DE ESTILO PARA SUSANA ---
+st.set_page_config(page_title="MQTT Control - Susana Edition", layout="centered")
 
-# Variables de estado
-if 'sensor_data' not in st.session_state:
-    st.session_state.sensor_data = None
+# Estilo CSS para una estética orgánica y limpia
+st.markdown("""
+    <style>
+    .stApp {
+        background-color: #f1f3f0;
+        background-image: linear-gradient(160deg, #f1f3f0 0%, #d4e0d4 100%);
+    }
+    /* Estilo de las tarjetas de control */
+    .stHeader {
+        color: #4a5d4a;
+    }
+    /* Botones con estilo orgánico */
+    .stButton>button {
+        background-color: #7a947a;
+        color: white;
+        border-radius: 8px;
+        border: none;
+        padding: 0.5rem 1rem;
+        transition: all 0.3s ease;
+    }
+    .stButton>button:hover {
+        background-color: #5d755d;
+        border: none;
+        color: #e8f0e8;
+        transform: translateY(-2px);
+    }
+    /* Títulos en verde oscuro */
+    h1, h2, h3 {
+        color: #2f3e2f !important;
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    }
+    /* Slider personalizado */
+    .stSlider {
+        padding-top: 20px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
-def get_mqtt_message(broker, port, topic, client_id):
-    """Función para obtener un mensaje MQTT"""
-    message_received = {"received": False, "payload": None}
-    
-    def on_message(client, userdata, message):
-        try:
-            payload = json.loads(message.payload.decode())
-            message_received["payload"] = payload
-            message_received["received"] = True
-        except:
-            # Si no es JSON, guardar como texto
-            message_received["payload"] = message.payload.decode()
-            message_received["received"] = True
-    
-    try:
-        client = mqtt.Client(client_id=client_id)
-        client.on_message = on_message
-        client.connect(broker, port, 60)
-        client.subscribe(topic)
-        client.loop_start()
-        
-        # Esperar máximo 5 segundos
-        timeout = time.time() + 5
-        while not message_received["received"] and time.time() < timeout:
-            time.sleep(0.1)
-        
-        client.loop_stop()
-        client.disconnect()
-        
-        return message_received["payload"]
-    
-    except Exception as e:
-        return {"error": str(e)}
+# Muestra la versión de Python
+st.write("Versión de Python:", platform.python_version())
 
-# Sidebar - Configuración
-with st.sidebar:
-    st.subheader('⚙️ Configuración de Conexión')
-    
-    broker = st.text_input('Broker MQTT', value='broker.mqttdashboard.com', 
-                           help='Dirección del broker MQTT')
-    
-    port = st.number_input('Puerto', value=1883, min_value=1, max_value=65535,
-                           help='Puerto del broker (generalmente 1883)')
-    
-    topic = st.text_input('Tópico', value='Sensor/THP2',
-                          help='Tópico MQTT a suscribirse')
-    
-    client_id = st.text_input('ID del Cliente', value='streamlit_client',
-                              help='Identificador único para este cliente')
+values = 0.0
+act1="OFF"
 
-# Título
-st.title('RECEPTO MQTT INTELIGENTE PRO MAX📡📡📡📡📡')
+# --- LÓGICA MQTT ---
+def on_publish(client,userdata,result):
+    pass
 
-# Información al inicio
-with st.expander('ℹ️ Información', expanded=False):
-    st.markdown("""
-    ### Cómo usar esta aplicación:
-    
-    1. **Broker MQTT**: Ingresa la dirección del servidor MQTT en el sidebar
-    2. **Puerto**: Generalmente es 1883 para conexiones no seguras
-    3. **Tópico**: El canal al que deseas suscribirte
-    4. **ID del Cliente**: Un identificador único para esta conexión
-    5. Haz clic en **Obtener Datos** para recibir el mensaje más reciente
-    
-    ### Brokers públicos para pruebas:
-    - broker.mqttdashboard.com
-    - test.mosquitto.org
-    - broker.hivemq.com
-    """)
+broker="157.230.214.127"
+port=1883
 
-st.divider()
+st.title("🌿 Control de Dispositivos")
+st.markdown("### Interfaz de Usuario - Susana")
 
-# Botón para obtener datos
-if st.button('🔄 Obtener Datos del Sensor', use_container_width=True):
-    with st.spinner('Conectando al broker y esperando datos...'):
-        sensor_data = get_mqtt_message(broker, int(port), topic, client_id)
-        st.session_state.sensor_data = sensor_data
+# Distribución limpia
+col1, col2 = st.columns(2)
 
-# Mostrar resultados
-if st.session_state.sensor_data:
-    st.divider()
-    st.subheader('📊 Datos Recibidos')
-    
-    data = st.session_state.sensor_data
-    
-    # Verificar si hay error
-    if isinstance(data, dict) and 'error' in data:
-        st.error(f"❌ Error de conexión: {data['error']}")
-    else:
-        st.success('✅ Datos recibidos correctamente')
-        
-        # Mostrar datos en formato JSON
-        if isinstance(data, dict):
-            # Mostrar cada campo en una métrica
-            cols = st.columns(len(data))
-            for i, (key, value) in enumerate(data.items()):
-                with cols[i]:
-                    st.metric(label=key, value=value)
-            
-            # Mostrar JSON completo
-            with st.expander('Ver JSON completo'):
-                st.json(data)
-        else:
-            # Si no es diccionario, mostrar como texto
-            st.code(data)
+with col1:
+    if st.button('Activar Sistema'):
+        act1="ON"
+        client1= paho.Client("GIT-HUB")                           
+        client1.on_publish = on_publish                          
+        client1.connect(broker,port)  
+        message = json.dumps({"Act1":act1})
+        client1.publish("cmqtt_s", message)
+        st.toast("Sistema Iniciado", icon="✅")
+
+with col2:
+    if st.button('Desactivar'):
+        act1="OFF"
+        client1= paho.Client("GIT-HUB")                           
+        client1.on_publish = on_publish                          
+        client1.connect(broker,port)  
+        message = json.dumps({"Act1":act1})
+        client1.publish("cmqtt_s", message)
+        st.toast("Sistema en Pausa", icon="⚪")
+
+st.markdown("---")
+
+# Slider con feedback visual
+values = st.slider('Ajuste de Intensidad', 0.0, 100.0, 50.0)
+st.write(f'**Nivel seleccionado:** {values}%')
+
+if st.button('Sincronizar Valor'):
+    client1= paho.Client("GIT-HUB")                           
+    client1.on_publish = on_publish                          
+    client1.connect(broker,port)   
+    message = json.dumps({"Analog": float(values)})
+    client1.publish("cmqtt_a", message)
+    st.success(f"Valor {values} sincronizado")
